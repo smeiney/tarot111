@@ -1182,7 +1182,6 @@
             const total = uniqueImages.length;
             let doneCount = 0;
             let failCount = 0;
-
             if (total === 0) {
                 assetsReady = true;
                 if (loader) loader.style.display = 'none';
@@ -1190,26 +1189,54 @@
                 return;
             }
 
-            uniqueImages.forEach((src) => {
-                const img = new Image();
-                img.decoding = 'async';
-                img.onload = () => {
-                    doneCount += 1;
-                    const progress = ((doneCount + failCount) / total) * 100;
-                    setAssetProgress(progress);
-                    if (doneCount + failCount === total) finish();
-                };
-                img.onerror = () => {
-                    failCount += 1;
-                    const progress = ((doneCount + failCount) / total) * 100;
-                    setAssetProgress(progress);
-                    if (doneCount + failCount === total) finish();
-                };
-                img.src = src;
-            });
+            // Faster page readiness strategy:
+            // 1) Load a small initial batch (关键图片) 并在它们加载完成后尽快隐藏加载遮罩，提升首屏速度。
+            // 2) 其余图片在后台以限并发方式继续加载。
+            const CONCURRENCY = 6;
+            const INITIAL_LOAD_COUNT = Math.min(12, total); // 先加载的关键数量
 
-            function finish() {
-                if (failCount > 0) {
+            // Promise-based image loader
+            function loadImage(src) {
+                return new Promise((resolve) => {
+                    const img = new Image();
+                    img.decoding = 'async';
+                    img.onload = () => {
+                        doneCount += 1;
+                        setAssetProgress(((doneCount + failCount) / total) * 100);
+                        resolve({ src, ok: true });
+                    };
+                    img.onerror = () => {
+                        failCount += 1;
+                        setAssetProgress(((doneCount + failCount) / total) * 100);
+                        resolve({ src, ok: false });
+                    };
+                    // Kick off load
+                    img.src = src;
+                });
+            }
+
+            // Concurrency-limited pool
+            async function loadPool(list, concurrency) {
+                let idx = 0;
+                const workers = new Array(concurrency).fill(0).map(async () => {
+                    while (idx < list.length) {
+                        const i = idx++;
+                        await loadImage(list[i]);
+                    }
+                });
+                await Promise.all(workers);
+            }
+
+            // Load initial batch first to make app interactive quickly
+            const initialList = uniqueImages.slice(0, INITIAL_LOAD_COUNT);
+            const remainingList = uniqueImages.slice(INITIAL_LOAD_COUNT);
+
+            // Start initial load synchronously (await) so we can hide loader asap
+            loadPool(initialList, Math.min(CONCURRENCY, initialList.length)).then(() => {
+                // If too many failures in initial batch, show retry
+                const initialFails = failCount;
+                const failThreshold = Math.max(2, Math.floor(INITIAL_LOAD_COUNT * 0.25));
+                if (initialFails > failThreshold) {
                     assetsFailed = true;
                     setAssetProgress(100, "加载失败");
                     if (retryBtn) retryBtn.style.display = 'inline-block';
@@ -1217,11 +1244,34 @@
                     updateIdleStatus();
                     return;
                 }
+
+                // Mark ready for interaction once initial batch loaded
                 assetsReady = true;
-                setAssetProgress(100, "加载完成");
+                setAssetProgress(Math.min(100, ((doneCount + failCount) / total) * 100), "首批加载完成");
                 if (loader) loader.style.display = 'none';
                 updateIdleStatus();
-            }
+
+                // Load remaining in background without blocking UI
+                if (remainingList.length > 0) {
+                    // Fire-and-forget
+                    loadPool(remainingList, CONCURRENCY).then(() => {
+                        // Final check when background loading completes
+                        if (failCount > 0) {
+                            // Do not forcibly block user, but surface retry when many failed
+                            const failRatio = failCount / total;
+                            if (failRatio > 0.15 && retryBtn) {
+                                retryBtn.style.display = 'inline-block';
+                                retryBtn.onclick = () => preloadDeckAssets();
+                            }
+                        }
+                        // set progress to complete
+                        setAssetProgress(100, '加载完成');
+                    });
+                } else {
+                    // No remaining images
+                    setAssetProgress(100, '加载完成');
+                }
+            });
         }
         
         // --- 2. Game State & Logic ---
