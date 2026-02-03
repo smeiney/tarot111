@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>简单测试</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            font-family: Arial, sans-serif;
+            background: #1a1a2e;
+            color: #eee;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 40px;
+            background: #16213e;
+            border-radius: 10px;
+        }
+        h1 { color: #4ade80; }
+        .test-item {
+            padding: 15px;
+            margin: 10px 0;
+            background: #0f3460;
+            border-radius: 5px;
+            border-left: 4px solid #4ade80;
+        }
+        .error {
+            border-left-color: #ef4444;
+        }
+        button {
+            padding: 10px 20px;
+            margin: 5px;
+            background: #4ade80;
+            border: none;
+            border-radius: 5px;
+            color: #000;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        button:hover {
+            background: #22c55e;
+        }
+        #console {
+            margin-top: 20px;
+            padding: 15px;
+            background: #000;
+            border-radius: 5px;
+            font-family: monospace;
+            font-size: 12px;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        .log { color: #4ade80; }
+        .error-log { color: #ef4444; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔧 诊断测试页面</h1>
+        
+        <div class="test-item">
+            <strong>✓ HTML 加载成功</strong>
+            <p>如果你能看到这个页面，说明基本的 HTML 是可以工作的。</p>
+        </div>
+        
+        <div class="test-item" id="js-test">
+            <strong>⏳ JavaScript 测试中...</strong>
+        </div>
+        
+        <div class="test-item" id="audio-test">
+            <strong>⏳ 音频测试中...</strong>
+        </div>
+        
+        <div class="test-item" id="storage-test">
+            <strong>⏳ 本地存储测试中...</strong>
+        </div>
+        
+        <div>
+            <button onclick="testAudio()">测试音频</button>
+            <button onclick="testStorage()">测试存储</button>
+            <button onclick="location.reload()">刷新页面</button>
+            <button onclick="window.location.href='index.html'">打开主应用</button>
+        </div>
+        
+        <div id="console"></div>
+    </div>
+    
+    <script>
+        // Console logger
+        const consoleDiv = document.getElementById('console');
+        function log(msg, isError = false) {
+            const p = document.createElement('div');
+            p.className = isError ? 'error-log' : 'log';
+            p.textContent = new Date().toLocaleTimeString() + ' - ' + msg;
+            consoleDiv.appendChild(p);
+            consoleDiv.scrollTop = consoleDiv.scrollHeight;
+            console.log(msg);
+        }
+        
+        // Test 1: JavaScript
+        try {
+            document.getElementById('js-test').innerHTML = 
+                '<strong>✓ JavaScript 正常工作</strong><p>DOM 操作和事件处理正常。</p>';
+            log('✓ JavaScript 测试通过');
+        } catch (e) {
+            document.getElementById('js-test').className = 'test-item error';
+            document.getElementById('js-test').innerHTML = 
+                '<strong>✗ JavaScript 错误</strong><p>' + e.message + '</p>';
+            log('✗ JavaScript 错误: ' + e.message, true);
+        }
+        
+        // Test 2: Audio
+        function testAudio() {
+            try {
+                const audio = new Audio();
+                audio.src = 'data:audio/wav;base64,UklGRiYAAABXQVZFZm10IBAAAAABAAEAQB8AAAB9AAACABAAZGF0YCIAAAAAAAA=';
+                audio.play().then(() => {
+                    document.getElementById('audio-test').innerHTML = 
+                        '<strong>✓ 音频系统正常</strong><p>浏览器支持音频播放。</p>';
+                    log('✓ 音频测试通过');
+                }).catch(e => {
+                    document.getElementById('audio-test').className = 'test-item error';
+                    document.getElementById('audio-test').innerHTML = 
+                        '<strong>⚠ 音频需要用户交互</strong><p>' + e.message + '</p>';
+                    log('⚠ 音频需要用户交互: ' + e.message);
+                });
+                
+                // Test Web Audio API
+                const ctx = new (window.AudioContext || window.webkitAudioContext)();
+                log('✓ Web Audio API 可用');
+            } catch (e) {
+                document.getElementById('audio-test').className = 'test-item error';
+                document.getElementById('audio-test').innerHTML = 
+                    '<strong>✗ 音频不可用</strong><p>' + e.message + '</p>';
+                log('✗ 音频错误: ' + e.message, true);
+            }
+        }
+        
+        // Test 3: LocalStorage
+        function testStorage() {
+            try {
+                localStorage.setItem('test', 'ok');
+                const val = localStorage.getItem('test');
+                localStorage.removeItem('test');
+                
+                if (val === 'ok') {
+                    document.getElementById('storage-test').innerHTML = 
+                        '<strong>✓ 本地存储正常</strong><p>可以保存和读取数据。</p>';
+                    log('✓ LocalStorage 测试通过');
+                } else {
+                    throw new Error('读取失败');
+                }
+            } catch (e) {
+                document.getElementById('storage-test').className = 'test-item error';
+                document.getElementById('storage-test').innerHTML = 
+                    '<strong>✗ 本地存储不可用</strong><p>' + e.message + '</p>';
+                log('✗ LocalStorage 错误: ' + e.message, true);
+            }
+        }
+        
+        // Auto-run tests on load
+        window.addEventListener('load', () => {
+            log('页面加载完成');
+            setTimeout(() => {
+                testAudio();
+                testStorage();
+            }, 500);
+        });
+        
+        // Catch all errors
+        window.addEventListener('error', (e) => {
+            log('✗ 全局错误: ' + e.message, true);
+        });
+        
+        log('测试脚本已加载');
+    </script>
+</body>
+</html>

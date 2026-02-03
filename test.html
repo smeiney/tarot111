@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>测试页面</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #1a1a2e;
+            color: #eee;
+        }
+        .status {
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 5px;
+            border: 2px solid #4CAF50;
+        }
+        .error {
+            border-color: #f44336;
+        }
+        button {
+            padding: 10px 20px;
+            margin: 5px;
+            cursor: pointer;
+            background: #d4af37;
+            color: #000;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+        }
+    </style>
+</head>
+<body>
+    <h1>🔍 塔罗应用诊断页面</h1>
+    
+    <div class="status">
+        <h2>✅ 服务器状态：正常</h2>
+        <p>如果您能看到这个页面，说明服务器正在运行</p>
+    </div>
+    
+    <div class="status">
+        <h2>🧪 JavaScript测试</h2>
+        <button onclick="testJS()">点击测试 JavaScript</button>
+        <p id="js-result"></p>
+    </div>
+    
+    <div class="status">
+        <h2>📱 浏览器信息</h2>
+        <p id="browser-info"></p>
+    </div>
+    
+    <div class="status">
+        <h2>🎯 常见问题检查</h2>
+        <ul>
+            <li>浏览器缓存：按 Ctrl+Shift+R (Windows) 或 Cmd+Shift+R (Mac) 强制刷新</li>
+            <li>浏览器控制台：按 F12 查看是否有错误信息</li>
+            <li>主页面访问：<a href="index.html" style="color: #d4af37;">点击这里访问主应用</a></li>
+        </ul>
+    </div>
+    
+    <script>
+        function testJS() {
+            const result = document.getElementById('js-result');
+            try {
+                result.textContent = '✅ JavaScript 正常工作！当前时间：' + new Date().toLocaleString();
+                result.style.color = '#4CAF50';
+            } catch (e) {
+                result.textContent = '❌ JavaScript 错误：' + e.message;
+                result.style.color = '#f44336';
+            }
+        }
+        
+        // 显示浏览器信息
+        const browserInfo = document.getElementById('browser-info');
+        browserInfo.innerHTML = `
+            <strong>User Agent:</strong> ${navigator.userAgent}<br>
+            <strong>语言:</strong> ${navigator.language}<br>
+            <strong>屏幕尺寸:</strong> ${window.innerWidth} x ${window.innerHeight}
+        `;
+    </script>
+</body>
+</html>

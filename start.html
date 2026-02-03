@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>加载中...</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background: linear-gradient(135deg, #0a0a14 0%, #1a1a2e 100%);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            color: #d4af37;
+        }
+        .loader-container {
+            text-align: center;
+            padding: 40px;
+            background: rgba(10, 10, 20, 0.8);
+            border-radius: 20px;
+            border: 2px solid #d4af37;
+            box-shadow: 0 0 30px rgba(212, 175, 55, 0.3);
+        }
+        .spinner {
+            width: 60px;
+            height: 60px;
+            border: 4px solid rgba(212, 175, 55, 0.2);
+            border-top-color: #d4af37;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        h1 {
+            margin: 0 0 15px;
+            font-size: 28px;
+        }
+        p {
+            margin: 5px 0;
+            color: #aaa;
+        }
+        .options {
+            margin-top: 30px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        button, a {
+            padding: 12px 24px;
+            background: #d4af37;
+            color: #000;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: bold;
+            text-decoration: none;
+            display: inline-block;
+            transition: all 0.3s;
+        }
+        button:hover, a:hover {
+            background: #f0d050;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(212, 175, 55, 0.4);
+        }
+        #status {
+            margin-top: 20px;
+            padding: 10px;
+            border-radius: 5px;
+            font-size: 14px;
+        }
+        .success { background: rgba(76, 175, 80, 0.2); color: #4CAF50; }
+        .error { background: rgba(244, 67, 54, 0.2); color: #f44336; }
+    </style>
+</head>
+<body>
+    <div class="loader-container">
+        <div class="spinner"></div>
+        <h1>🔮 Mystic Tarot</h1>
+        <p>正在准备您的塔罗体验...</p>
+        <div id="status"></div>
+        <div class="options">
+            <a href="index.html" id="main-link">进入塔罗占卜</a>
+            <button onclick="forceReload()">强制刷新重试</button>
+            <a href="diagnostic.html">运行完整诊断</a>
+            <a href="test.html">基础测试页面</a>
+        </div>
+    </div>
+    
+    <script>
+        const statusEl = document.getElementById('status');
+        
+        async function checkApp() {
+            try {
+                // 检查主应用
+                const response = await fetch('index.html', { method: 'HEAD' });
+                if (response.ok) {
+                    statusEl.textContent = '✅ 应用就绪！点击上方按钮进入';
+                    statusEl.className = 'success';
+                    
+                    // 3秒后自动跳转
+                    setTimeout(() => {
+                        statusEl.textContent = '✅ 正在自动跳转...';
+                        setTimeout(() => {
+                            window.location.href = 'index.html';
+                        }, 500);
+                    }, 3000);
+                } else {
+                    statusEl.textContent = `⚠️ 服务器响应: ${response.status}`;
+                    statusEl.className = 'error';
+                }
+            } catch (e) {
+                statusEl.textContent = `❌ 无法连接: ${e.message}`;
+                statusEl.className = 'error';
+            }
+        }
+        
+        function forceReload() {
+            // 清除所有缓存
+            if ('caches' in window) {
+                caches.keys().then(names => {
+                    names.forEach(name => caches.delete(name));
+                });
+            }
+            localStorage.clear();
+            sessionStorage.clear();
+            
+            // 添加时间戳强制刷新
+            window.location.href = 'index.html?t=' + Date.now();
+        }
+        
+        // 页面加载时检查
+        checkApp();
+    </script>
+</body>
+</html>
